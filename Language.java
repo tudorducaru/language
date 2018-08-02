@@ -2,11 +2,18 @@ import java.util.Scanner;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 
 public class Language{
 
 	static FileOutputStream outputStream;
 	static File outputFile;
+
+	// scanner that reads source code
+	static Scanner scanner;
+
+	// all variables in the project
+	static ArrayList<String> variables = new ArrayList<String>();
 
 	// print in the console
 	private static void print(String str){
@@ -27,10 +34,10 @@ public class Language{
 
 		try {
 			// get a scanner of that file
-			Scanner fileScanner = new Scanner(file);
+			scanner = new Scanner(file);
 
 			// go through the file
-			parseFile(fileScanner);
+			parseFile(scanner);
 
 		} catch (Exception e){
 
@@ -95,7 +102,7 @@ public class Language{
 	}
 
 	// handle variable declaration or initialization
-	private static String handleVariable(String line){
+	private static void handleVariable(String line){
 
 		String ifStrVal = "";
 		String value = "";
@@ -131,10 +138,45 @@ public class Language{
 		// extract the name of the variable
 		String variableName = line.substring(firstLetterIndex, equalIndex);
 
+		// add the variable to the array list
+		variables.add(variableName);
+
 		// construct the translated java string
 		String translated = type + " " + variableName + " = " + String.valueOf(value) + ";";
 
-		return translated;
+		// write to the output file
+		writeToFile(translated);
+	}
+
+	// handle if statements
+	private static void handleIfs(String line){
+
+		// remove white spaces
+		line = line.replaceAll("\\s+","");
+
+		// replace : with { and add to translated code
+		line = line.substring(0, line.length() - 1) + "{";
+
+		// write the first line to the output file
+		writeToFile(line);
+
+		// read next line
+		line = scanner.nextLine();
+
+		// handle if statement until you reach its end
+		while(!line.contains("endif;")){
+
+			if(line.contains("var")) handleVariable(line);
+			else if(line.contains("if")) handleIfs(line);
+
+			// read next line
+			line = scanner.nextLine();
+
+			print(line);
+		}
+
+		// end the if statement
+		writeToFile("}");
 	}
 
 	// parse the file
@@ -147,9 +189,14 @@ public class Language{
 			String currentLine = scanner.nextLine();
 
 			// check if it is a variable declaration or initialization
-			if(currentLine.contains("var")){
+			if(currentLine.startsWith("var")){
 
-				writeToFile(handleVariable(currentLine));
+				// handle variables
+				handleVariable(currentLine);
+			} else if (currentLine.startsWith("if")){
+
+				// handle if statements
+				handleIfs(currentLine);
 			}
 		}
 	}
