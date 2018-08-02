@@ -3,6 +3,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
+
 
 public class Language{
 
@@ -15,8 +18,13 @@ public class Language{
 	// current line of the source code
 	static String currentLine;
 
-	// all variables in the project
-	static ArrayList<String> variables = new ArrayList<String>();
+	// all variables and their values in the project
+	static Map<String, String> varMap = new HashMap<String, String>();
+
+	// all variables
+	static ArrayList<String> varArray = new ArrayList<String>();
+
+	functionsMap.put("print", "System.out.println")
 
 	// print in the console
 	private static void print(String str){
@@ -141,8 +149,9 @@ public class Language{
 		// extract the name of the variable
 		String variableName = currentLine.substring(firstLetterIndex, equalIndex);
 
-		// add the variable to the array list
-		variables.add(variableName);
+		// add the variable to the lists
+		varMap.put(variableName, value);
+		varArray.add(variableName);
 
 		// construct the translated java string
 		String translated = type + " " + variableName + " = " + String.valueOf(value) + ";";
@@ -167,8 +176,8 @@ public class Language{
 		writeToFile(currentLine);
 	}
 
-	// handle if statements
-	private static void handleIfs(){
+	// handle if, while and for statements
+	private static void handleWIF(){
 
 		// remove white spaces
 		currentLine = currentLine.replaceAll("\\s+","");
@@ -183,16 +192,12 @@ public class Language{
 		currentLine = scanner.nextLine();
 
 		// handle if statement until you reach its end
-		while(!currentLine.contains("endif;")){
+		while(!currentLine.contains("end;")){
 
 			// remove white spaces before first char
 			currentLine = currentLine.trim();
 
-			print(currentLine);
-
-			if(currentLine.contains("var")) handleVariable();
-			else if(currentLine.startsWith("if")) handleIfs();
-			else if(currentLine.startsWith("else")) handleElse();
+			analyzeLine();
 
 			// read next line
 			currentLine = scanner.nextLine();
@@ -200,6 +205,68 @@ public class Language{
 
 		// end the if statement
 		writeToFile("}");
+	}
+
+	// update variable 
+	private static void updateVariable(int i){
+
+		// get current data type
+		String currentType = identifyVarType(varMap.get(varArray.get(i)));
+
+		// extract value from line
+		String ifStrVal = "";
+		String value = "";
+		String type = "";
+
+		// if it is a string, extract the value first
+		if(currentLine.contains("\"")){
+			ifStrVal = currentLine.substring(currentLine.indexOf("\""), currentLine.lastIndexOf("\"") + 1);
+		}
+
+		// remove white spaces from line
+		currentLine = currentLine.replaceAll("\\s+","");
+
+		// get the index of the first letter of the variable name
+		int firstLetterIndex = currentLine.indexOf('r') + 1;
+
+		// get the index of the equal sign
+		int equalIndex = currentLine.indexOf('=');
+
+		// get the length of the line
+		int lineLength = currentLine.length();
+
+		// if line is not string, extract value
+		if(ifStrVal.equals("")){
+			value = currentLine.substring(equalIndex + 1, lineLength - 1);
+		} else {
+			value = ifStrVal;
+		}
+
+		// get new data type
+		String newType = identifyVarType(value);
+
+		// update the variable
+		if(currentType.equals(newType)){
+			varMap.put(varArray.get(i), value);
+			writeToFile(currentLine);
+		} else {
+
+		}
+	}
+
+	// function to analyze each line
+	private static void analyzeLine(){
+
+		// check if it is a variable declaration or initialization
+		if(currentLine.startsWith("var")) handleVariable();
+		else if(currentLine.startsWith("else")) handleElse();
+		else if(currentLine.startsWith("while") || currentLine.startsWith("for") || currentLine.startsWith("if")) handleWIF();
+		else {
+			for(int i = 0; i < varArray.size(); i++){
+				currentLine = currentLine.trim();
+				if(currentLine.startsWith(varArray.get(i))) updateVariable(i);
+			}
+		}
 	}
 
 	// parse the file
@@ -211,18 +278,7 @@ public class Language{
 			// get the current line in the source file
 			currentLine = scanner.nextLine();
 
-			// check if it is a variable declaration or initialization
-			if(currentLine.startsWith("var")){
-
-				// handle variables
-				handleVariable();
-			} 
-			else if (currentLine.startsWith("if")){
-
-				// handle if statements
-				handleIfs();
-
-			}
+			analyzeLine();
 		}
 	}
 
