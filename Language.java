@@ -151,6 +151,22 @@ public class Language{
 		writeToFile(translated);
 	}
 
+	// handles else statements
+	private static void handleElse(){
+
+		// remove white spaces
+		currentLine = currentLine.replaceAll("\\s+","");
+
+		// add space after else
+		if(currentLine.contains("elseif")) currentLine = currentLine.substring(0, 4) + " " + currentLine.substring(4, currentLine.length());
+
+		// replace : with {
+		currentLine = currentLine.substring(0, currentLine.length() - 1) + "{";
+
+		// write to the file
+		writeToFile(currentLine);
+	}
+
 	// handle if statements
 	private static void handleIfs(){
 
@@ -169,8 +185,14 @@ public class Language{
 		// handle if statement until you reach its end
 		while(!currentLine.contains("endif;")){
 
+			// remove white spaces before first char
+			currentLine = currentLine.trim();
+
+			print(currentLine);
+
 			if(currentLine.contains("var")) handleVariable();
-			else if(currentLine.contains("if")) handleIfs();
+			else if(currentLine.startsWith("if")) handleIfs();
+			else if(currentLine.startsWith("else")) handleElse();
 
 			// read next line
 			currentLine = scanner.nextLine();
@@ -200,9 +222,6 @@ public class Language{
 				// handle if statements
 				handleIfs();
 
-			} else if (currentLine.startsWith("else") && currentLine.contains("if")){
-
-				// handle like if statements
 			}
 		}
 	}
