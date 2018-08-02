@@ -12,6 +12,9 @@ public class Language{
 	// scanner that reads source code
 	static Scanner scanner;
 
+	// current line of the source code
+	static String currentLine;
+
 	// all variables in the project
 	static ArrayList<String> variables = new ArrayList<String>();
 
@@ -102,32 +105,32 @@ public class Language{
 	}
 
 	// handle variable declaration or initialization
-	private static void handleVariable(String line){
+	private static void handleVariable(){
 
 		String ifStrVal = "";
 		String value = "";
 		String type = "";
 
 		// if it is a string, extract the value first
-		if(line.contains("\"")){
-			ifStrVal = line.substring(line.indexOf("\""), line.lastIndexOf("\"") + 1);
+		if(currentLine.contains("\"")){
+			ifStrVal = currentLine.substring(currentLine.indexOf("\""), currentLine.lastIndexOf("\"") + 1);
 		}
 
 		// remove white spaces from line
-		line = line.replaceAll("\\s+","");
+		currentLine = currentLine.replaceAll("\\s+","");
 
 		// get the index of the first letter of the variable name
-		int firstLetterIndex = line.indexOf('r') + 1;
+		int firstLetterIndex = currentLine.indexOf('r') + 1;
 
 		// get the index of the equal sign
-		int equalIndex = line.indexOf('=');
+		int equalIndex = currentLine.indexOf('=');
 
 		// get the length of the line
-		int lineLength = line.length();
+		int lineLength = currentLine.length();
 
 		// if line is not string, extract value
 		if(ifStrVal.equals("")){
-			value = line.substring(equalIndex + 1, lineLength - 1);
+			value = currentLine.substring(equalIndex + 1, lineLength - 1);
 		} else {
 			value = ifStrVal;
 		}
@@ -136,7 +139,7 @@ public class Language{
 		type = identifyVarType(value);
 
 		// extract the name of the variable
-		String variableName = line.substring(firstLetterIndex, equalIndex);
+		String variableName = currentLine.substring(firstLetterIndex, equalIndex);
 
 		// add the variable to the array list
 		variables.add(variableName);
@@ -149,30 +152,28 @@ public class Language{
 	}
 
 	// handle if statements
-	private static void handleIfs(String line){
+	private static void handleIfs(){
 
 		// remove white spaces
-		line = line.replaceAll("\\s+","");
+		currentLine = currentLine.replaceAll("\\s+","");
 
 		// replace : with { and add to translated code
-		line = line.substring(0, line.length() - 1) + "{";
+		currentLine = currentLine.substring(0, currentLine.length() - 1) + "{";
 
 		// write the first line to the output file
-		writeToFile(line);
+		writeToFile(currentLine);
 
 		// read next line
-		line = scanner.nextLine();
+		currentLine = scanner.nextLine();
 
 		// handle if statement until you reach its end
-		while(!line.contains("endif;")){
+		while(!currentLine.contains("endif;")){
 
-			if(line.contains("var")) handleVariable(line);
-			else if(line.contains("if")) handleIfs(line);
+			if(currentLine.contains("var")) handleVariable();
+			else if(currentLine.contains("if")) handleIfs();
 
 			// read next line
-			line = scanner.nextLine();
-
-			print(line);
+			currentLine = scanner.nextLine();
 		}
 
 		// end the if statement
@@ -186,17 +187,22 @@ public class Language{
 		while(scanner.hasNextLine()){
 
 			// get the current line in the source file
-			String currentLine = scanner.nextLine();
+			currentLine = scanner.nextLine();
 
 			// check if it is a variable declaration or initialization
 			if(currentLine.startsWith("var")){
 
 				// handle variables
-				handleVariable(currentLine);
-			} else if (currentLine.startsWith("if")){
+				handleVariable();
+			} 
+			else if (currentLine.startsWith("if")){
 
 				// handle if statements
-				handleIfs(currentLine);
+				handleIfs();
+
+			} else if (currentLine.startsWith("else") && currentLine.contains("if")){
+
+				// handle like if statements
 			}
 		}
 	}
