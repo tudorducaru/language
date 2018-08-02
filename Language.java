@@ -24,8 +24,6 @@ public class Language{
 	// all variables
 	static ArrayList<String> varArray = new ArrayList<String>();
 
-	functionsMap.put("print", "System.out.println")
-
 	// print in the console
 	private static void print(String str){
 		System.out.println(str);
@@ -58,6 +56,19 @@ public class Language{
 		}	
 	}
 
+	// write new line
+	private static void writeNewLine(){
+
+		try {
+			// create the output stream
+			outputStream = new FileOutputStream(outputFile, true);
+
+			outputStream.write(System.getProperty("line.separator").getBytes());
+		} catch (Exception e){
+			e.printStackTrace();
+		}
+	}
+
 	// write to external file
 	private static void writeToFile(String str){
 
@@ -77,8 +88,7 @@ public class Language{
 			// write to the file
 			outputStream.write(bytes);
 
-			// write new line
-			outputStream.write(System.getProperty("line.separator").getBytes());
+			writeNewLine();
 
 			// flush the stream
 			outputStream.flush();
@@ -254,6 +264,68 @@ public class Language{
 		}
 	}
 
+	// helper function to generate getter for object
+	private static void generateGetter(String name, String type){
+
+		// capitalize name
+		String capName = name.substring(0, 1).toUpperCase() + name.substring(1);
+
+		writeToFile("public " + type + " get" + capName + "(){ return this." + name + ";}");
+	}
+
+	// helper function to generate setter for object
+	private static void generateSetter(String name, String type){
+
+		// capitalize name
+		String capName = name.substring(0, 1).toUpperCase() + name.substring(1);
+
+		writeToFile("public void" + " set" + capName + "(" + type + " " + name + "){ this." + name + " = " + name + ";}");
+	}
+
+	// instantiate a class
+	private static void handleObjectInstantiation(){
+
+		// split the string into words
+		String[] strParts = currentLine.split(" ");
+
+		// get the name of the object (class)
+		String objectName = strParts[2].replaceAll("\\s+","");
+
+		// write the header
+		writeToFile("private static class " + objectName + " {");
+
+		// skip through a line
+		currentLine = scanner.nextLine();
+		currentLine = scanner.nextLine();
+
+		// generate an empty constructor
+		writeToFile("public " + objectName + "(){}");
+
+		// add fields until you meet the functions
+		while(!currentLine.contains("methods")){
+
+			// split fields in key value pairs
+			String[] memberParts = currentLine.split(":");
+
+			// get the name of the member and its type
+			String memberName = memberParts[0].replaceAll("\\s+","");
+			String memberType = memberParts[1].replaceAll("\\s+","");
+
+			// add the member
+			writeToFile("private " + memberType + " " + memberName + ";");
+
+			// generate getter and setter for the member
+			generateGetter(memberName, memberType);
+			generateSetter(memberName, memberType);
+
+			// read another line
+			currentLine = scanner.nextLine();
+		}	
+
+		// finish the class definition
+		writeToFile("}");
+	}
+
 	// function to analyze each line
 	private static void analyzeLine(){
 
@@ -261,6 +333,7 @@ public class Language{
 		if(currentLine.startsWith("var")) handleVariable();
 		else if(currentLine.startsWith("else")) handleElse();
 		else if(currentLine.startsWith("while") || currentLine.startsWith("for") || currentLine.startsWith("if")) handleWIF();
+		else if(currentLine.startsWith("new")) handleObjectInstantiation();
 		else {
 			for(int i = 0; i < varArray.size(); i++){
 				currentLine = currentLine.trim();
