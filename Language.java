@@ -26,12 +26,6 @@ public class Language{
 	// current line of the source code
 	static String currentLine;
 
-	// get input from user
-	private static String getStringInput(){
-		Scanner scanner = new Scanner(System.in);
-		return scanner.nextLine();
-	}
-
 	// read a file 
 	private static void readFile(String filename){
 
@@ -120,9 +114,6 @@ public class Language{
 
 	// handle if, while and for statements
 	private static void handleWIF(int mode){
-
-		// remove white spaces
-		currentLine = currentLine.replaceAll("\\s+","");
 
 		// replace : with { and add to translated code
 		currentLine = currentLine.substring(0, currentLine.length() - 1) + "{";
@@ -272,6 +263,9 @@ public class Language{
 	// function to analyze each line
 	private static void analyzeLine(int mode){
 
+		// remove white spaces before and after text
+		currentLine = currentLine.trim();
+
 		// check if it is a variable declaration or initialization
 		if(currentLine.startsWith("else")) handleElse(mode);
 		else if(currentLine.startsWith("while") || currentLine.startsWith("for") || currentLine.startsWith("if")) handleWIF(mode);
@@ -330,7 +324,6 @@ public class Language{
 
 		writeToFile("	}");
 		writeToFile("}");
-
 	}
 
 	public static void main(String[] args) {
@@ -338,11 +331,8 @@ public class Language{
 		// specify the output file path
 		outputFile = new File("C:\\Users\\Tudor\\Desktop\\OPEN\\Output.txt");
 
-		// ask user for input of source code
-		Util.print("Open file : ");
-
 		// get the name of the file
-		String sourceCode = getStringInput();
+		String sourceCode = Util.getStringInput();
 
 		// read the file
 		readFile(sourceCode);
