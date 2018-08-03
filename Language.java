@@ -96,7 +96,7 @@ public class Language{
 	}
 
 	// handles else statements
-	private static void handleElse(){
+	private static void handleElse(int mode){
 
 		// remove white spaces
 		currentLine = currentLine.replaceAll("\\s+","");
@@ -110,12 +110,16 @@ public class Language{
 		// add } at the beginning
 		currentLine = "} " + currentLine;
 
-		// write to the file
-		mainBody += currentLine;
+
+		if(mode == 0){
+			mainBody += currentLine;
+		} else {
+			functions += currentLine;
+		}
 	}
 
 	// handle if, while and for statements
-	private static void handleWIF(){
+	private static void handleWIF(int mode){
 
 		// remove white spaces
 		currentLine = currentLine.replaceAll("\\s+","");
@@ -123,8 +127,11 @@ public class Language{
 		// replace : with { and add to translated code
 		currentLine = currentLine.substring(0, currentLine.length() - 1) + "{";
 
-		// write the first line to the output file
-		mainBody += currentLine;
+		if(mode == 0){
+			mainBody += currentLine;
+		} else {
+			functions += currentLine;
+		}
 
 		// read next line
 		currentLine = scanner.nextLine();
@@ -135,14 +142,18 @@ public class Language{
 			// remove white spaces before first char
 			currentLine = currentLine.trim();
 
-			analyzeLine();
+			analyzeLine(mode);
 
 			// read next line
 			currentLine = scanner.nextLine();
 		}
 
-		// end the if statement
-		mainBody += "}";
+
+		if(mode == 0){
+			mainBody += "}";
+		} else {
+			functions += "}";
+		}
 	}
 
 	// helper function to generate getter for object
@@ -230,19 +241,50 @@ public class Language{
 	// handle function
 	private static void handleFunction(){
 
-		// TO DO
+		// split into parts
+		String[] parts = currentLine.split(" ");
+
+		String namePart = "";
+
+		for(int i = 1; i < parts.length; i++){
+			namePart += " " + parts[i];
+		}
+
+		// remove last char
+		namePart = namePart.substring(0, namePart.length() - 1) + "{";
+
+		functions += " " + "public static " + namePart;
+
+		// read next line
+		currentLine = scanner.nextLine();
+
+		// read and analyze the lines until you get to the return statement
+		while(!currentLine.contains("return")){
+
+			analyzeLine(1);
+
+			currentLine = scanner.nextLine();
+		}
+
+		functions += currentLine + "}";
 	}
 
 	// function to analyze each line
-	private static void analyzeLine(){
+	private static void analyzeLine(int mode){
 
 		// check if it is a variable declaration or initialization
-		if(currentLine.startsWith("else")) handleElse();
-		else if(currentLine.startsWith("while") || currentLine.startsWith("for") || currentLine.startsWith("if")) handleWIF();
+		if(currentLine.startsWith("else")) handleElse(mode);
+		else if(currentLine.startsWith("while") || currentLine.startsWith("for") || currentLine.startsWith("if")) handleWIF(mode);
 		else if(currentLine.startsWith("new")) handleObjectInstantiation();
 		else if(currentLine.startsWith("function")) handleFunction();
 		else if(currentLine.startsWith("package") || currentLine.startsWith("import")) handleHeader();
-		else mainBody += currentLine;
+		else {
+			if(mode == 0){
+				mainBody += currentLine;
+			} else {
+				functions += currentLine;
+			}
+		}
 	}
 
 	// parse the file
@@ -254,7 +296,7 @@ public class Language{
 			// get the current line in the source file
 			currentLine = scanner.nextLine();
 
-			analyzeLine();
+			analyzeLine(0);
 		}
 
 		// asemble the output file
