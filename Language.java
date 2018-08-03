@@ -1,3 +1,5 @@
+package langpack;
+
 import java.util.Scanner;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -5,29 +7,24 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
-
+import langpack.Util;
 
 public class Language{
 
 	static FileOutputStream outputStream;
 	static File outputFile;
 
+	// parts of the file
+	static String header = "";
+	static String classes = "";
+	static String functions = "";
+	static String mainBody = "";
+
 	// scanner that reads source code
 	static Scanner scanner;
 
 	// current line of the source code
 	static String currentLine;
-
-	// all variables and their values in the project
-	static Map<String, String> varMap = new HashMap<String, String>();
-
-	// all variables
-	static ArrayList<String> varArray = new ArrayList<String>();
-
-	// print in the console
-	private static void print(String str){
-		System.out.println(str);
-	}
 
 	// get input from user
 	private static String getStringInput(){
@@ -50,7 +47,7 @@ public class Language{
 
 		} catch (Exception e){
 
-			print("exception");
+			Util.print("exception");
 
 			e.printStackTrace();
 		}	
@@ -98,78 +95,6 @@ public class Language{
 		}
 	}
 
-	// identify variable type
-	private static String identifyVarType(String value){
-
-		// check if string
-		if(value.contains("\"")){
-			return "String";
-		}
-
-		// check if boolean
-		if(value.equals("true") || value.equals("false")){
-			return "boolean";
-		}
-
-		try { 
-       		Integer.parseInt(value); 
-       		return "int";
-    	} catch(Exception e){
-    		
-    	}
-
-		// otherwise, it is a float
-		return "float";
-	}
-
-	// handle variable declaration or initialization
-	private static void handleVariable(){
-
-		String ifStrVal = "";
-		String value = "";
-		String type = "";
-
-		// if it is a string, extract the value first
-		if(currentLine.contains("\"")){
-			ifStrVal = currentLine.substring(currentLine.indexOf("\""), currentLine.lastIndexOf("\"") + 1);
-		}
-
-		// remove white spaces from line
-		currentLine = currentLine.replaceAll("\\s+","");
-
-		// get the index of the first letter of the variable name
-		int firstLetterIndex = currentLine.indexOf('r') + 1;
-
-		// get the index of the equal sign
-		int equalIndex = currentLine.indexOf('=');
-
-		// get the length of the line
-		int lineLength = currentLine.length();
-
-		// if line is not string, extract value
-		if(ifStrVal.equals("")){
-			value = currentLine.substring(equalIndex + 1, lineLength - 1);
-		} else {
-			value = ifStrVal;
-		}
-
-		// get the type of the variable
-		type = identifyVarType(value);
-
-		// extract the name of the variable
-		String variableName = currentLine.substring(firstLetterIndex, equalIndex);
-
-		// add the variable to the lists
-		varMap.put(variableName, value);
-		varArray.add(variableName);
-
-		// construct the translated java string
-		String translated = type + " " + variableName + " = " + String.valueOf(value) + ";";
-
-		// write to the output file
-		writeToFile(translated);
-	}
-
 	// handles else statements
 	private static void handleElse(){
 
@@ -182,8 +107,11 @@ public class Language{
 		// replace : with {
 		currentLine = currentLine.substring(0, currentLine.length() - 1) + "{";
 
+		// add } at the beginning
+		currentLine = "} " + currentLine;
+
 		// write to the file
-		writeToFile(currentLine);
+		mainBody += currentLine;
 	}
 
 	// handle if, while and for statements
@@ -196,7 +124,7 @@ public class Language{
 		currentLine = currentLine.substring(0, currentLine.length() - 1) + "{";
 
 		// write the first line to the output file
-		writeToFile(currentLine);
+		mainBody += currentLine;
 
 		// read next line
 		currentLine = scanner.nextLine();
@@ -214,54 +142,7 @@ public class Language{
 		}
 
 		// end the if statement
-		writeToFile("}");
-	}
-
-	// update variable 
-	private static void updateVariable(int i){
-
-		// get current data type
-		String currentType = identifyVarType(varMap.get(varArray.get(i)));
-
-		// extract value from line
-		String ifStrVal = "";
-		String value = "";
-		String type = "";
-
-		// if it is a string, extract the value first
-		if(currentLine.contains("\"")){
-			ifStrVal = currentLine.substring(currentLine.indexOf("\""), currentLine.lastIndexOf("\"") + 1);
-		}
-
-		// remove white spaces from line
-		currentLine = currentLine.replaceAll("\\s+","");
-
-		// get the index of the first letter of the variable name
-		int firstLetterIndex = currentLine.indexOf('r') + 1;
-
-		// get the index of the equal sign
-		int equalIndex = currentLine.indexOf('=');
-
-		// get the length of the line
-		int lineLength = currentLine.length();
-
-		// if line is not string, extract value
-		if(ifStrVal.equals("")){
-			value = currentLine.substring(equalIndex + 1, lineLength - 1);
-		} else {
-			value = ifStrVal;
-		}
-
-		// get new data type
-		String newType = identifyVarType(value);
-
-		// update the variable
-		if(currentType.equals(newType)){
-			varMap.put(varArray.get(i), value);
-			writeToFile(currentLine);
-		} else {
-
-		}
+		mainBody += "}";
 	}
 
 	// helper function to generate getter for object
@@ -270,7 +151,11 @@ public class Language{
 		// capitalize name
 		String capName = name.substring(0, 1).toUpperCase() + name.substring(1);
 
-		writeToFile("public " + type + " get" + capName + "(){ return this." + name + ";}");
+		classes += "	public " + type + " get" + capName + "(){";
+
+		classes += "		return this." + name + ";";
+
+		classes += "	}";
 	}
 
 	// helper function to generate setter for object
@@ -279,7 +164,11 @@ public class Language{
 		// capitalize name
 		String capName = name.substring(0, 1).toUpperCase() + name.substring(1);
 
-		writeToFile("public void" + " set" + capName + "(" + type + " " + name + "){ this." + name + " = " + name + ";}");
+		classes += "	public void" + " set" + capName + "(" + type + " " + name + "){";
+
+		classes += "		this." + name + " = " + name + ";";
+
+		classes += "	}";
 	}
 
 	// instantiate a class
@@ -292,17 +181,17 @@ public class Language{
 		String objectName = strParts[2].replaceAll("\\s+","");
 
 		// write the header
-		writeToFile("private static class " + objectName + " {");
+		classes += " " +  "private static class " + objectName + " {";
 
 		// skip through a line
 		currentLine = scanner.nextLine();
 		currentLine = scanner.nextLine();
 
 		// generate an empty constructor
-		writeToFile("public " + objectName + "(){}");
+		classes += "	public " + objectName + "(){}";
 
 		// add fields until you meet the functions
-		while(!currentLine.contains("methods")){
+		while(!currentLine.contains("end")){
 
 			// split fields in key value pairs
 			String[] memberParts = currentLine.split(":");
@@ -312,7 +201,7 @@ public class Language{
 			String memberType = memberParts[1].replaceAll("\\s+","");
 
 			// add the member
-			writeToFile("private " + memberType + " " + memberName + ";");
+			classes += "	private " + memberType + " " + memberName + ";";
 
 			// generate getter and setter for the member
 			generateGetter(memberName, memberType);
@@ -323,23 +212,37 @@ public class Language{
 		}	
 
 		// finish the class definition
-		writeToFile("}");
+		classes += "}";
+	}
+
+	// handle header 
+	private static void handleHeader(){
+
+		// read until you finish import export statements
+		while(currentLine.startsWith("package") || currentLine.startsWith("import")){
+
+			header += currentLine;
+
+			currentLine = scanner.nextLine();
+		}
+	}
+
+	// handle function
+	private static void handleFunction(){
+
+		// TO DO
 	}
 
 	// function to analyze each line
 	private static void analyzeLine(){
 
 		// check if it is a variable declaration or initialization
-		if(currentLine.startsWith("var")) handleVariable();
-		else if(currentLine.startsWith("else")) handleElse();
+		if(currentLine.startsWith("else")) handleElse();
 		else if(currentLine.startsWith("while") || currentLine.startsWith("for") || currentLine.startsWith("if")) handleWIF();
 		else if(currentLine.startsWith("new")) handleObjectInstantiation();
-		else {
-			for(int i = 0; i < varArray.size(); i++){
-				currentLine = currentLine.trim();
-				if(currentLine.startsWith(varArray.get(i))) updateVariable(i);
-			}
-		}
+		else if(currentLine.startsWith("function")) handleFunction();
+		else if(currentLine.startsWith("package") || currentLine.startsWith("import")) handleHeader();
+		else mainBody += currentLine;
 	}
 
 	// parse the file
@@ -353,15 +256,48 @@ public class Language{
 
 			analyzeLine();
 		}
+
+		// asemble the output file
+		assembleFile();
+	}
+
+	// function to assemble the pieces of the program
+	private static void assembleFile(){
+
+		writeToFile(header);
+
+		writeNewLine();
+
+		writeToFile("public class Output{");
+
+		writeToFile(classes);
+
+		writeNewLine();
+
+		writeToFile(functions);
+
+		writeNewLine();
+
+		writeToFile("public static void main(String[] args) {");
+
+		writeNewLine();
+
+		writeToFile(mainBody);
+
+		writeNewLine();
+
+		writeToFile("	}");
+		writeToFile("}");
+
 	}
 
 	public static void main(String[] args) {
 		
 		// specify the output file path
-		outputFile = new File("C:\\Users\\Tudor\\Desktop\\OPEN\\output.txt");
+		outputFile = new File("C:\\Users\\Tudor\\Desktop\\OPEN\\Output.txt");
 
 		// ask user for input of source code
-		print("Open file : ");
+		Util.print("Open file : ");
 
 		// get the name of the file
 		String sourceCode = getStringInput();
