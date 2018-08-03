@@ -193,7 +193,7 @@ public class Language{
 		classes += "	public " + objectName + "(){}";
 
 		// add fields until you meet the functions
-		while(!currentLine.contains("end")){
+		while(!currentLine.contains("methods")){
 
 			// split fields in key value pairs
 			String[] memberParts = currentLine.split(":");
@@ -211,7 +211,8 @@ public class Language{
 
 			// read another line
 			currentLine = scanner.nextLine();
-		}	
+		}
+
 
 		// finish the class definition
 		classes += "}";
